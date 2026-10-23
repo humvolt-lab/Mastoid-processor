@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<title>The Mastoid Processor</title>
+<style>
+:root{--bg:#ece3d0;--card:#f7f0e0;--ink:#2a2622;--dim:#7a7064;--line:#d8ccb4;--acc:#e8541e;--tl:#2f8a82;--mx:#7b4fb8;--ma:#c23b77;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1a1816;--card:#262320;--ink:#efe6d2;--dim:#9a9082;--line:#3b362f;--acc:#ff6a2b;--tl:#3fb8ae;--mx:#a98be0;--ma:#ff7aa9;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#1a1816;--card:#262320;--ink:#efe6d2;--dim:#9a9082;--line:#3b362f;--acc:#ff6a2b;--tl:#3fb8ae;--mx:#a98be0;--ma:#ff7aa9;color-scheme:dark}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:-apple-system,"SF Pro Rounded",system-ui,sans-serif;touch-action:manipulation;overscroll-behavior:none}
+body{display:flex;flex-direction:column}
+main{flex:1;width:100%;max-width:430px;margin:0 auto;padding:8px;display:flex;flex-direction:column;justify-content:center;gap:8px}
+header{text-align:center}
+h1{font-size:17px;margin:0;font-weight:800;letter-spacing:.02em}
+#info{font-size:12px;color:var(--dim);margin-top:2px;min-height:15px}
+svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.card{--c:var(--acc);background:var(--card);border:2px solid var(--line);border-radius:16px;padding:10px;display:flex;flex-direction:column;gap:8px;transition:border-color .15s,box-shadow .15s}
+#c2{--c:var(--tl)}#c3{--c:var(--mx)}
+.card.on{border-color:var(--c);box-shadow:0 0 0 4px color-mix(in srgb,var(--c) 22%,transparent)}
+.head{display:flex;align-items:center;gap:10px}
+.badge{width:36px;height:36px;border-radius:50%;background:var(--c);color:#fff;display:grid;place-items:center;flex:none;will-change:transform}
+.badge svg{width:20px;height:20px}
+.ttl b{display:block;font-size:15px}
+.ttl small{color:var(--dim);font-size:12px}
+.now{margin-left:auto;display:none;align-items:center;gap:7px;font-size:12px;font-weight:700;color:var(--c)}
+.card.on .now{display:flex}
+.now b{display:flex;gap:3px;align-items:flex-end;height:16px}
+.now i{width:4px;height:30%;background:var(--c);border-radius:2px;animation:eq .8s ease-in-out infinite}
+.now i:nth-child(2){animation-delay:.25s}.now i:nth-child(3){animation-delay:.5s}
+@keyframes eq{0%,100%{height:25%}50%{height:100%}}
+@media (prefers-reduced-motion:reduce){.now i{animation:none;height:70%}}
+.row{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.row.two{grid-template-columns:repeat(2,1fr)}
+.btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:clamp(46px,7.5vh,64px);padding:6px 2px;border-radius:12px;border:1.5px solid var(--line);background:transparent;color:var(--ink);font:600 11.5px/1.2 -apple-system,system-ui,sans-serif;cursor:pointer}
+.btn.main{background:var(--c);border-color:var(--c);color:#fff}
+.btn:disabled{opacity:.35;cursor:default}
+.btn:active:not(:disabled){transform:scale(.96)}
+.btn.busy{opacity:.7}
+.btn .i-play,.btn .i-pause{fill:currentColor;stroke:none}
+.btn .i-pause{display:none}.btn.is-playing .i-play{display:none}.btn.is-playing .i-pause{display:block}
+.btn.is-playing{border-color:var(--c);color:var(--c)}
+.btn svg{width:20px;height:20px}
+.panel{--c:var(--acc);gap:8px}
+.ctl{display:flex;align-items:center;gap:10px}
+.ctl>svg{stroke:var(--dim)}
+.lab{width:46px;font-size:13px;font-weight:600;color:var(--dim)}
+.ctl input{flex:1;min-width:0;accent-color:var(--acc);height:28px}
+#bv{min-width:3ch;text-align:right;font-weight:700;font-size:16px}
+.u{font-size:11px;color:var(--dim);font-weight:600}
+#keysel,#modesel{padding:6px 10px;border-radius:12px;border:1.5px solid var(--line);background:transparent;color:var(--ink);font:700 16px -apple-system,system-ui,sans-serif}
+#mode{display:inline-flex;margin-left:auto;padding:0;border:1.5px solid var(--line);border-radius:12px;overflow:hidden;background:transparent;cursor:pointer;font:600 14px -apple-system,system-ui,sans-serif}
+#mode span{padding:6px 10px;color:var(--dim)}
+#mode[data-mode="maj"] span:first-child,#mode[data-mode="min"] span:last-child{background:var(--acc);color:#fff}
+#init{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:24px;text-align:center;z-index:10;
+padding-top:calc(24px + env(safe-area-inset-top,0px));padding-bottom:calc(24px + env(safe-area-inset-bottom,0px))}
+#init svg.big{width:64px;height:64px;color:var(--acc)}
+#init p{max-width:280px;font-size:15px;line-height:1.5;color:var(--dim);margin:0}
+#init small{font-size:12px;color:var(--dim)}
+#start{--c:var(--acc);flex-direction:row;gap:10px;padding:16px 30px;font-size:17px;border-radius:999px}
+#init.hide{display:none}
+.chip{display:flex;align-items:center;gap:5px;padding:5px 9px;border-radius:999px;border:1.5px solid var(--line);background:transparent;color:var(--dim);font:600 12px -apple-system,system-ui,sans-serif;cursor:pointer;white-space:nowrap;flex:none}
+.chip svg{width:16px;height:16px}
+.chip.on{background:var(--c);border-color:var(--c);color:#fff}
+#c2 .now span{display:none}
+.sec{display:flex;gap:4px;align-items:stretch}
+.sec .card{flex:1;min-width:0}
+.nav{width:26px;flex:none;border:1.5px solid var(--line);border-radius:12px;background:transparent;display:grid;place-items:center;padding:0;cursor:pointer}
+#s1 .nav{color:var(--acc)}#s2 .nav{color:var(--tl)}#s3 .nav{color:var(--mx)}
+.nav svg{width:20px;height:20px}
+.nav:disabled{opacity:.25;cursor:default}
+.nav:active:not(:disabled){transform:scale(.94)}
+html,body{overflow-x:hidden}
+.head{min-width:0}.ttl{min-width:0}
+#mixb .i-shuf{display:none}#mixb.is-reshuffle .i-shuf{display:block}#mixb.is-reshuffle .i-blend{display:none}
+#modesel{flex:1;min-width:0;margin-left:auto}
+.rng{padding:8px 10px;gap:6px}
+.rtop{display:flex;justify-content:space-between;font-size:12px;font-weight:600;color:var(--dim)}
+#rv{color:var(--ink);font-weight:700}
+.rbar{position:relative;height:30px}
+.rin{position:absolute;left:9px;right:9px;top:0;bottom:0}
+.rin i{position:absolute;top:10px;bottom:10px;width:1px;background:var(--line);transform:translateX(-.5px)}
+.rin i.b{top:7px;bottom:7px;background:var(--dim);opacity:.6}
+#rfill{position:absolute;top:9px;bottom:9px;background:var(--acc);opacity:.28;border-radius:3px}
+#ph{position:absolute;top:2px;bottom:2px;width:2px;background:var(--ink);border-radius:1px;transform:translateX(-1px);display:none}
+.rbar input{position:absolute;left:0;top:0;width:100%;height:100%;margin:0;background:none;-webkit-appearance:none;appearance:none;pointer-events:none;outline:none}
+.rbar input::-webkit-slider-runnable-track{background:none;height:30px}
+.rbar input::-webkit-slider-thumb{-webkit-appearance:none;box-sizing:border-box;pointer-events:auto;width:18px;height:30px;border-radius:7px;background:var(--acc);border:2px solid var(--card);box-shadow:0 1px 4px rgba(0,0,0,.3)}
+.rbar input::-moz-range-track{background:none}
+.rbar input::-moz-range-thumb{box-sizing:border-box;pointer-events:auto;width:18px;height:30px;border-radius:7px;background:var(--acc);border:2px solid var(--card)}
+.steps{display:flex;gap:4px}
+.stp{flex:1;min-width:0;height:36px;border-radius:10px;border:1.5px solid var(--line);background:transparent;color:var(--ink);font:700 14px -apple-system,system-ui,sans-serif;cursor:pointer;padding:0}
+.stp.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.stp:active{transform:scale(.95)}
+.sec .card{display:grid;grid-template-columns:repeat(4,1fr);column-gap:6px;align-items:center;padding:8px}
+.sec .head{flex-direction:column;gap:2px;text-align:center;min-width:0}
+.sec .ttl b{font-size:13px}
+.sec .badge{width:34px;height:34px}
+.now{margin:0;display:flex!important;visibility:hidden;height:12px;align-items:flex-end;justify-content:center}
+.card.on .now{visibility:visible}
+.now b{height:12px}
+#c3 #pp3{grid-column:3}#c3 #mixb{grid-column:4}
+.sec .chip{padding:3px 7px;font-size:11px;gap:3px}.sec .chip svg{width:13px;height:13px}
+.rng{flex-direction:row;align-items:center;gap:8px;padding:6px 8px}
+.rl{font-size:11px;font-weight:700;color:var(--dim);width:34px}
+.steps{flex:1;min-width:0}
+.stp{height:32px}
+#c4{--c:var(--ma)}#s4 .nav{color:var(--ma)}
+</style>
+</head>
+<body>
+<div id="init">
+  <svg class="big" viewBox="0 0 24 24"><polyline points="3 17 9 7 9 17 15 7 15 17 21 7"/></svg>
+  <h1>The Mastoid Processor</h1>
+  <p>Random breakbeats chopped from imaginary analog synth records.</p>
+  <button id="start" class="btn main"><svg class="i-play" viewBox="0 0 24 24" style="fill:currentColor;stroke:none"><path d="M7 4.5v15l13-7.5z"/></svg><span class="t">Tap to start</span></button>
+  <small>Turn your volume up. Sound plays even with the silent switch on.</small>
+</div>
+<main>
+  <header hidden><div id="info">Tap “New loop” to make a beat</div></header>
+  <section class="card rng" aria-label="Loop length in steps"><span class="rl">Steps</span><div class="steps"><button class="stp" data-n="1">1</button><button class="stp" data-n="4">4</button><button class="stp" data-n="5">5</button><button class="stp" data-n="6">6</button><button class="stp" data-n="7">7</button><button class="stp" data-n="8">8</button><button class="stp" data-n="16">16</button><button class="stp on" data-n="32">32</button></div></section>
+  <div class="sec" id="s1"><button id="hb1" class="nav" disabled aria-label="Previous synth loop"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button><section class="card" id="c1">
+    <div class="head"><div class="badge" id="b1"><svg viewBox="0 0 24 24"><polyline points="3 17 9 7 9 17 15 7 15 17 21 7"/></svg></div><div class="ttl"><b>Synth break</b></div><div class="now"><b><i></i><i></i><i></i></b></div></div>
+    <button id="go" class="btn main" aria-label="Make a new synth loop"><svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><circle cx="8.5" cy="8.5" r="1" fill="currentColor" stroke="none"/><circle cx="15.5" cy="8.5" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="8.5" cy="15.5" r="1" fill="currentColor" stroke="none"/><circle cx="15.5" cy="15.5" r="1" fill="currentColor" stroke="none"/></svg><span class="t">New loop</span></button><button id="pp1" class="btn" disabled aria-label="Play or pause the synth loop"><svg class="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5z"/></svg><svg class="i-pause" viewBox="0 0 24 24"><rect x="6" y="5" width="4.5" height="14" rx="1"/><rect x="13.5" y="5" width="4.5" height="14" rx="1"/></svg><span class="t">Play</span></button><button id="rr1" class="btn" disabled aria-label="Reshuffle the slices of the synth loop"><svg viewBox="0 0 24 24"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg><span class="t">Reshuffle</span></button>
+  </section><button id="hf1" class="nav" disabled aria-label="Next synth loop"><svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></button></div>
+  <div class="sec" id="s2"><button id="hb2" class="nav" disabled aria-label="Previous 808 loop"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button><section class="card" id="c2">
+    <div class="head"><div class="badge" id="b2"><svg viewBox="0 0 24 24"><path d="M2 12c2-9 4-9 6 0s4 9 6 0 4-9 6 0"/></svg></div><div class="ttl"><b>808 fold</b></div><button id="dr" class="chip" aria-pressed="false" aria-label="Add drums (kick, snare, hi-hat) to the 808"><svg viewBox="0 0 24 24"><path d="M3 9c4-3 14-3 18 0"/><path d="M3 12c4 3 14 3 18 0"/><path d="M12 15v6"/></svg><span>Drums</span></button></div>
+    <button id="go2" class="btn main" aria-label="Make a new 808 loop"><svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><circle cx="8.5" cy="8.5" r="1" fill="currentColor" stroke="none"/><circle cx="15.5" cy="8.5" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="8.5" cy="15.5" r="1" fill="currentColor" stroke="none"/><circle cx="15.5" cy="15.5" r="1" fill="currentColor" stroke="none"/></svg><span class="t">New loop</span></button><button id="pp2" class="btn" disabled aria-label="Play or pause the 808"><svg class="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5z"/></svg><svg class="i-pause" viewBox="0 0 24 24"><rect x="6" y="5" width="4.5" height="14" rx="1"/><rect x="13.5" y="5" width="4.5" height="14" rx="1"/></svg><span class="t">Play</span></button><button id="rr2" class="btn" disabled aria-label="Reshuffle the slices of the 808"><svg viewBox="0 0 24 24"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg><span class="t">Reshuffle</span></button>
+  </section><button id="hf2" class="nav" disabled aria-label="Next 808 loop"><svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></button></div>
+  <div class="sec" id="s4"><button id="hb4" class="nav" disabled aria-label="Previous melody loop"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button><section class="card" id="c4">
+    <div class="head"><div class="badge" id="b4"><svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div><div class="ttl"><b>Melody</b></div><button id="mm" class="chip" aria-pressed="false" aria-label="Chop the melody up and mix it into the current beat loop"><svg viewBox="0 0 24 24"><circle cx="9" cy="12" r="6"/><circle cx="15" cy="12" r="6"/></svg><span>Mix in</span></button></div>
+    <button id="go4" class="btn main" aria-label="Make a new melody: new notes and a new synth sound"><svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><circle cx="8.5" cy="8.5" r="1" fill="currentColor" stroke="none"/><circle cx="15.5" cy="8.5" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="8.5" cy="15.5" r="1" fill="currentColor" stroke="none"/><circle cx="15.5" cy="15.5" r="1" fill="currentColor" stroke="none"/></svg><span class="t">New loop</span></button><button id="pp4" class="btn" disabled aria-label="Play or pause the melody"><svg class="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5z"/></svg><svg class="i-pause" viewBox="0 0 24 24"><rect x="6" y="5" width="4.5" height="14" rx="1"/><rect x="13.5" y="5" width="4.5" height="14" rx="1"/></svg><span class="t">Play</span></button><button id="rr4" class="btn" disabled aria-label="Reshuffle the melody: new notes, same synth sound"><svg viewBox="0 0 24 24"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg><span class="t">Reshuffle</span></button>
+  </section><button id="hf4" class="nav" disabled aria-label="Next melody loop"><svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></button></div>
+  <div class="sec" id="s3"><button id="hb3" class="nav" disabled aria-label="Previous blend loop"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button><section class="card" id="c3">
+    <div class="head"><div class="badge" id="b3"><svg viewBox="0 0 24 24"><circle cx="9" cy="12" r="6"/><circle cx="15" cy="12" r="6"/></svg></div><div class="ttl"><b>Blend</b></div><div class="now"><b><i></i><i></i><i></i></b></div></div>
+    <button id="pp3" class="btn" disabled aria-label="Play or pause the blend"><svg class="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5z"/></svg><svg class="i-pause" viewBox="0 0 24 24"><rect x="6" y="5" width="4.5" height="14" rx="1"/><rect x="13.5" y="5" width="4.5" height="14" rx="1"/></svg><span class="t">Play</span></button><button id="mixb" class="btn main" aria-label="Blend the synth loop and the 808, then reshuffle the blend"><svg class="i-blend" viewBox="0 0 24 24"><circle cx="9" cy="12" r="6"/><circle cx="15" cy="12" r="6"/></svg><svg class="i-shuf" viewBox="0 0 24 24"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg><span class="t">Blend</span></button>
+  </section><button id="hf3" class="nav" disabled aria-label="Next blend loop"><svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></button></div>
+  <section class="card panel">
+    <div class="ctl"><button id="auto" class="chip" aria-pressed="false" aria-label="Auto: change something at random every 2 bars"><svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.5 9a9 9 0 0 1 14.9-3.4L23 10M1 14l4.6 4.4A9 9 0 0 0 20.5 15"/></svg><span>Auto</span></button><input type="range" id="bpmr" min="60" max="160" value="100" aria-label="Tempo in BPM"><span id="bv">100</span><span class="u">BPM</span></div>
+    <div class="ctl"><svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg><span class="lab">Key</span><select id="keysel" aria-label="Key"></select><select id="modesel" aria-label="Scale"></select></div>
+  </section>
+</main>
+
+<script>
+const rnd=(a,b)=>a+Math.random()*(b-a), ri=(a,b)=>Math.floor(rnd(a,b+1)), pick=a=>a[ri(0,a.length-1)];
+const mtof=m=>440*2**((m-69)/12), NOTES=["C","C♯","D","D♯","E","F","F♯","G","G♯","A","A♯","B"];
+const SR=44100;
+let ctx,cur=null,t0=0,bpm=100,busy=false;
+const go=document.getElementById('go'),info=document.getElementById('info');
+
+function silentWav(){const n=800,b=new Uint8Array(44+n),dv=new DataView(b.buffer);
+const s=(o,t)=>[...t].forEach((c,i)=>b[o+i]=c.charCodeAt(0));
+s(0,'RIFF');dv.setUint32(4,36+n,true);s(8,'WAVEfmt ');dv.setUint32(16,16,true);dv.setUint16(20,1,true);dv.setUint16(22,1,true);
+dv.setUint32(24,8000,true);dv.setUint32(28,8000,true);dv.setUint16(32,1,true);dv.setUint16(34,8,true);s(36,'data');dv.setUint32(40,n,true);b.fill(128,44);
+return 'data:audio/wav;base64,'+btoa(String.fromCharCode(...b));}
+
+function unlockAudio(){
+  try{navigator.audioSession&&(navigator.audioSession.type='playback');}catch(e){}
+  ctx=new (window.AudioContext||window.webkitAudioContext)();
+  ctx.resume();
+  // silent <audio> element moves iOS to the playback channel (ignores the mute switch)
+  try{const a=new Audio(silentWav());a.loop=true;a.play().catch(()=>{});}catch(e){}
+  const b=ctx.createBuffer(1,1,22050),s=ctx.createBufferSource();s.buffer=b;s.connect(ctx.destination);s.start(0);
+}
+
+// ---- synth + drum rendering (offline) ----
+async function render(){
+  /* tempo is global */
+  const step=60/bpm/4,steps=32,oc=new OfflineAudioContext(1,Math.ceil(SR*step*steps),SR);
+  const nb=oc.createBuffer(1,SR,SR),nd=nb.getChannelData(0);for(let i=0;i<SR;i++)nd[i]=Math.random()*2-1;
+  const bus=oc.createGain();bus.gain.value=.75;
+  const sh=oc.createWaveShaper(),cv=new Float32Array(1024);for(let i=0;i<1024;i++)cv[i]=Math.tanh((i/512-1)*1.8);sh.curve=cv;
+  const cmp=oc.createDynamicsCompressor();bus.connect(sh);sh.connect(cmp);cmp.connect(oc.destination);
+  const dl=oc.createDelay(1),fb=oc.createGain(),dw=oc.createGain(),dlp=oc.createBiquadFilter();
+  dl.delayTime.value=step*3;fb.gain.value=rnd(.25,.45);dw.gain.value=.35;dlp.frequency.value=2500;
+  dl.connect(dlp);dlp.connect(fb);fb.connect(dl);dlp.connect(dw);dw.connect(bus);
+  const sw=rnd(0,.33),T=i=>i*step+(i%2?sw*step:0);
+  const env=(g,t,v,d)=>{g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);};
+  const kick=(t,v)=>{const o=oc.createOscillator(),g=oc.createGain();o.frequency.setValueAtTime(rnd(120,170),t);o.frequency.exponentialRampToValueAtTime(rnd(42,55),t+.12);env(g,t,v,.35);o.connect(g);g.connect(bus);o.start(t);o.stop(t+.4);};
+  const nz=(t,v,type,f,d,q=1)=>{const s=oc.createBufferSource(),fl=oc.createBiquadFilter(),g=oc.createGain();s.buffer=nb;fl.type=type;fl.frequency.value=f;fl.Q.value=q;env(g,t,v,d);s.connect(fl);fl.connect(g);g.connect(bus);s.start(t,rnd(0,.5),d+.05);};
+  const snare=(t,v)=>{nz(t,v,'bandpass',rnd(1500,2400),.2,.8);const o=oc.createOscillator(),g=oc.createGain();o.type='triangle';o.frequency.value=rnd(170,210);env(g,t,v*.6,.1);o.connect(g);g.connect(bus);o.start(t);o.stop(t+.15);};
+  const hat=(t,v,open)=>nz(t,v,'highpass',7000,open?.18:.04);
+  const voice=(t,m,len,v,peak,q,type,send)=>{
+    const g=oc.createGain(),f=oc.createBiquadFilter();f.type='lowpass';f.Q.value=q;
+    f.frequency.setValueAtTime(peak,t);f.frequency.exponentialRampToValueAtTime(Math.max(120,peak*.12),t+len);
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+.008);g.gain.setValueAtTime(v,t+len*.7);g.gain.linearRampToValueAtTime(0,t+len);
+    f.connect(g);g.connect(bus);if(send)g.connect(dl);
+    [-7,7].forEach(d=>{const o=oc.createOscillator();o.type=type;o.frequency.value=mtof(m);o.detune.value=d;o.connect(f);o.start(t);o.stop(t+len+.02);});
+  };
+  // drums
+  for(let bar=0;bar<2;bar++){
+    const b=bar*16;kick(T(b),1);
+    [3,6,7,10,11,14].forEach(s=>{if(Math.random()<(bar?.38:.28))kick(T(b+s),.85);});
+    snare(T(b+4),.9);snare(T(b+12),.9);
+    [7,9,15,2].forEach(s=>{if(Math.random()<.22)snare(T(b+s),.3);});
+    const fast=Math.random()<.4;
+    for(let s=0;s<16;s+=fast?1:2)if(Math.random()<.85)hat(T(b+s),s%4?.22:.4,false);
+    if(Math.random()<.6)hat(T(b+pick([6,14])),.35,true);
+  }
+  // analog bass + lead + stabs
+  const root=31+((gkey-31)%12+12)%12,sc=SC[gmode].n;
+  const bType=pick(['sawtooth','square']),lType=pick(['sawtooth','square']);
+  const bassPat=[];for(let i=0;i<16;i++)bassPat[i]=i%4===0?Math.random()<.85:Math.random()<.3;
+  for(let bar=0;bar<2;bar++)for(let i=0;i<16;i++)if(bassPat[i])
+    voice(T(bar*16+i),root+pick(sc)+(Math.random()<.2?12:0),step*rnd(1,2.2),.5,rnd(500,2000),rnd(5,13),bType,false);
+  const lr=root+pick([24,24,36]),arp=Array.from({length:ri(3,5)},()=>pick(sc));
+  const arpOn=Math.random()<.8,every=pick([1,2,2,3]);
+  if(arpOn)for(let i=0;i<32;i+=every)if(Math.random()<.8)voice(T(i),lr+arp[(i/every|0)%arp.length]+(Math.random()<.15?12:0),step*rnd(.9,1.6),.16,rnd(1500,4500),rnd(3,9),lType,true);
+  [0,16].forEach(i=>[0,pick([3,4]),7].forEach(n=>voice(T(i),root+24+n,step*rnd(2,5),.1,rnd(900,2200),2,'sawtooth',true)));
+  const out=(await oc.startRendering()).getChannelData(0);
+  return {out,root,bits:0};
+}
+
+// ---- sampler degrade + breakbeat chop ----
+function sampleAndChop(data,drive=1.6,keep){
+  const N=data.length,d=new Float32Array(N),TP=Math.PI*2;
+  // tape chain: wow/flutter -> opto-style compression -> saturation -> head bump -> HF roll-off -> hiss
+  const tp=(keep&&keep.tp)||{wc:ri(1,2),fc:ri(14,30),wp:rnd(0,TP),wd:rnd(8,16),fd:rnd(.8,1.6),lf:rnd(6500,9000)},{wc,fc,wp,wd,fd}=tp;   // kept when reusing a source
+  const ca=1-Math.exp(-1/(SR*.006)),cr=1-Math.exp(-1/(SR*.18)),th=.22,ratio=3.2;
+  const lpA=1-Math.exp(-TP*tp.lf/SR),bumpA=1-Math.exp(-TP*110/SR);
+  let env=0,lp=0,lp2=0;
+  for(let i=0;i<N;i++){
+    // wow/flutter (whole cycles per loop so it wraps seamlessly)
+    const m=wd*Math.sin(TP*wc*i/N+wp)+fd*Math.sin(TP*fc*i/N),p=((i+m)%N+N)%N,i0=p|0,fr=p-i0;
+    let x=data[i0]*(1-fr)+data[(i0+1)%N]*fr;
+    // compressor
+    const l=Math.abs(x);env+=(l>env?ca:cr)*(l-env);
+    x*=(env>th?(th+(env-th)/ratio)/env:1)*1.7;
+    // tape saturation
+    x=Math.tanh(x*drive)*.85;
+    // low-end head bump
+    lp2+=bumpA*(x-lp2);x+=.35*lp2;
+    // hiss, then high-frequency roll-off
+    // (tape hiss removed)
+    lp+=lpA*(x-lp);lp+=lpA*(x-lp)*.4;
+    d[i]=lp;
+  }
+  const res=chopF(d,keep&&keep.plan);return {res,d,tp,plan:res.plan};
+}
+
+// ---- chop: 16 slices reshuffled / repeated / time-stretched / held (slice 1 always stays on the downbeat) ----
+function chopF(d,plan){
+  const N=d.length,S=16,b=Array.from({length:S+1},(_,s)=>Math.round(s*N/S)),res=new Float32Array(N);let prev=0;
+  // the arrangement is a "plan" (which slice goes where, and how it is treated). A plan can be reused on new material,
+  // e.g. to add drums to the 808 without changing the loop that is playing.
+  plan=plan||[];
+  // time-stretch: granular overlap-add, so slices slow down or speed up without changing pitch
+  const stretchF=(len,st,rate)=>{
+    const o=new Float32Array(len),G=1024,H=512;
+    for(let p=-H;p<len;p+=H){const sp=st+Math.floor(Math.max(0,p)*rate);
+      for(let k=0;k<G;k++){const oi=p+k;if(oi>=0&&oi<len)o[oi]+=(.5-.5*Math.cos(6.283*k/G))*d[(sp+k)%N];}}
+    return o;
+  };
+  // sample-hold: loop a tempo-synced window (a 16th or 32nd note) so the stutter locks to the beat, crossfaded at the seam
+  const holdF=(len,st,div)=>{
+    const o=new Float32Array(len),hl=Math.floor(len/div),x=64;
+    for(let i=0;i<len;i++){const q=i%hl;let v=d[(st+q)%N];if(q<x&&i>=hl)v=v*(q/x)+d[(st+hl+q)%N]*(1-q/x);o[i]=v;}
+    return o;
+  };
+  for(let s=0;s<S;s++){
+    let pl=plan[s];
+    if(!pl){
+      let src=s;const r=Math.random();
+      if(s>0)src=r<.55?s:r<.8?ri(0,S-1):prev;
+      const m=s>0?Math.random():1;
+      pl=plan[s]={src,mode:m<.14?1:m<.28?2:0,rate:pick([.5,.5,.66,.75]),div:pick([2,2,4]),ofs:Math.random()};
+    }
+    const src=pl.src;prev=src;
+    const len=b[s+1]-b[s],f=Math.min(100,len>>1);
+    const seg=pl.mode===1?stretchF(len,b[src],pl.rate):pl.mode===2?holdF(len,b[src]+Math.floor(pl.ofs*(len>>1)),pl.div):null;
+    for(let i=0;i<len;i++){
+      let v=seg?seg[i]:d[Math.min(N-1,b[src]+i)];
+      if(i<f)v*=i/f;else if(i>len-f)v*=(len-i)/f;
+      res[b[s]+i]=v;
+    }
+  }
+  let pk=0;for(let i=0;i<N;i++)pk=Math.max(pk,Math.abs(res[i]));
+  // a reused plan keeps its original gain, so the existing material doesn't change level; a soft knee catches any new peaks
+  const g=plan.g||(.9/(pk||1));plan.g=g;
+  for(let i=0;i<N;i++){let y=res[i]*g;const a=Math.abs(y);if(a>.9)y=Math.sign(y)*(.9+.1*Math.tanh((a-.9)/.1));res[i]=y;}
+  res.plan=plan;
+  return res;
+}
+
+let gkey=ri(0,11),gmode="min"; // global key + scale shared by every generator
+const SCALES=[['min','Minor',[0,2,3,5,7,8,10]],['maj','Major',[0,2,4,5,7,9,11]],['dor','Dorian',[0,2,3,5,7,9,10]],['phr','Phrygian',[0,1,3,5,7,8,10]],
+['lyd','Lydian',[0,2,4,6,7,9,11]],['mix','Mixolydian',[0,2,4,5,7,9,10]],['hmin','Harmonic minor',[0,2,3,5,7,8,11]],
+['per','Persian',[0,1,4,5,6,8,11]],['pdom','Hijaz (Phrygian dominant)',[0,1,4,5,7,8,10]],['dbl','Double harmonic',[0,1,4,5,7,8,11]],
+['hun','Hungarian minor',[0,2,3,6,7,8,11]],['hira','Hirajoshi',[0,2,3,7,8]],['blu','Blues',[0,3,5,6,7,10]],['mpent','Minor pentatonic',[0,3,5,7,10]]];
+const SC=Object.fromEntries(SCALES.map(([id,name,n])=>[id,{name,n}]));
+gmode=pick(SCALES)[0];   // a random scale (and, above, a random key) every time the app loads
+const layers={synth:null,sub:null,mix:null,mel:null},busyL={},srcs={};
+let drumsOn=false,mixState='blend',melMix=false,melChop=null,melChops=[],melPick=[];
+const pads={synth:go,sub:document.getElementById('go2'),mix:document.getElementById('mixb'),mel:document.getElementById('go4')},rr={synth:document.getElementById('rr1'),sub:document.getElementById('rr2'),mel:document.getElementById('rr4')};
+const pp={synth:document.getElementById('pp1'),sub:document.getElementById('pp2'),mix:document.getElementById('pp3'),mel:document.getElementById('pp4')};
+const $=id=>document.getElementById(id);
+const cards={synth:$('c1'),sub:$('c2'),mix:$('c3'),mel:$('c4')},badge={synth:$('b1'),sub:$('b2'),mix:$('b3'),mel:$('b4')};
+// reflect state in the UI: playing card highlighted, play/pause icon + label, blend hint
+function refreshUI(){
+  for(const k in cards){
+    const l=layers[k],on=!!l&&!l.paused,b=pp[k];
+    cards[k].classList.toggle('on',on);
+    b.classList.toggle('is-playing',on);b.querySelector('.t').textContent=on?'Pause':'Play';
+  }
+  cards.mix.classList.toggle('ready',!!(srcs.synth&&srcs.sub));
+  // once a blend exists, its button becomes the same Reshuffle button the other cards have
+  const rs=mixState==='reshuffle';mixb.classList.toggle('is-reshuffle',rs);mixb.classList.toggle('main',!rs);mixb.querySelector('.t').textContent=rs?'Reshuffle':'Blend';
+}
+const bpmr=document.getElementById('bpmr'),bv=document.getElementById('bv');
+let master;
+
+// ---- wave-folded 808: sine sub with pitch drop -> sine wavefolder (fold depth decays) -> amp; then sampled + chopped like the main loop ----
+async function render808(){
+  const step=60/bpm/4,total=step*32,N=Math.ceil(SR*total),oc=new OfflineAudioContext(1,N,SR);
+  const sc=SC[gmode].n,root=31+((gkey-31)%12+12)%12;
+  const cv=new Float32Array(2048);for(let i=0;i<2048;i++)cv[i]=Math.sin((i/1023.5-1)*4*Math.PI);
+  const bus=oc.createGain(),lp=oc.createBiquadFilter(),cm=oc.createDynamicsCompressor();
+  bus.gain.value=.8;lp.type='lowpass';lp.frequency.value=rnd(3500,7000);
+  bus.connect(lp);lp.connect(cm);cm.connect(oc.destination);
+  const hits=[];
+  for(let bar=0;bar<2;bar++){const o=bar*16;hits.push(o);[3,6,7,10,11,14].forEach(s=>{if(Math.random()<(bar?.36:.3))hits.push(o+s);});}
+  const pool=[0,0,0,4,2,6,3];
+  hits.forEach((h,i)=>{
+    const t=h*step,nx=i+1<hits.length?hits[i+1]*step:total,down=h%16===0;
+    const m=root+(down?0:sc[pick(pool)%sc.length])+(!down&&Math.random()<.12?12:0);
+    const f=mtof(m),len=Math.max(.08,Math.min(step*rnd(5,12),nx-t)),end=t+len;
+    const o=oc.createOscillator(),pre=oc.createGain(),sh=oc.createWaveShaper(),amp=oc.createGain();
+    sh.curve=cv;sh.oversample='2x';
+    o.frequency.setValueAtTime(f*rnd(2,3.5),t);o.frequency.setTargetAtTime(f,t,.018);
+    if(Math.random()<.3)o.frequency.setTargetAtTime(mtof(m+pick([-7,-5,-2,2,5,7])),t+len*.55,.06);
+    pre.gain.setValueAtTime(rnd(.3,.8),t);pre.gain.exponentialRampToValueAtTime(.13,t+Math.max(.05,len*.8));
+    const v=down?1:rnd(.7,.95);
+    amp.gain.setValueAtTime(0,t);amp.gain.linearRampToValueAtTime(v,t+.004);
+    amp.gain.exponentialRampToValueAtTime(.25*v,t+Math.max(.03,len-.03));amp.gain.setTargetAtTime(0,end-.02,.008);
+    o.connect(pre);pre.connect(sh);sh.connect(amp);amp.connect(bus);o.start(t);o.stop(end+.1);
+  });
+  return (await oc.startRendering()).getChannelData(0);
+}
+
+// ---- hi-hat + snare for the 808 source (rendered separately so it can be toggled without changing the 808 notes) ----
+async function renderDrums(){
+  const step=60/bpm/4,N=Math.ceil(SR*step*32),oc=new OfflineAudioContext(1,N,SR);
+  const nb=oc.createBuffer(1,SR,SR),nd=nb.getChannelData(0);for(let i=0;i<SR;i++)nd[i]=Math.random()*2-1;
+  const bus=oc.createGain();bus.gain.value=.8;bus.connect(oc.destination);
+  const env=(g,t,v,d)=>{g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);};
+  const nz=(t,v,type,f,d,q=1)=>{const s=oc.createBufferSource(),fl=oc.createBiquadFilter(),g=oc.createGain();s.buffer=nb;fl.type=type;fl.frequency.value=f;fl.Q.value=q;env(g,t,v,d);s.connect(fl);fl.connect(g);g.connect(bus);s.start(t,rnd(0,.5),d+.05);};
+  const snare=(t,v)=>{nz(t,v,'bandpass',rnd(1500,2400),.2,.8);const o=oc.createOscillator(),g=oc.createGain();o.type='triangle';o.frequency.value=rnd(170,210);env(g,t,v*.6,.1);o.connect(g);g.connect(bus);o.start(t);o.stop(t+.15);};
+  const hat=(t,v,open)=>nz(t,v,'highpass',7000,open?.18:.04);
+  const kick=(t,v)=>{const o=oc.createOscillator(),g=oc.createGain();o.frequency.setValueAtTime(rnd(120,160),t);o.frequency.exponentialRampToValueAtTime(rnd(42,52),t+.1);env(g,t,v,.3);o.connect(g);g.connect(bus);o.start(t);o.stop(t+.35);};
+  for(let bar=0;bar<2;bar++){
+    const o=bar*16,fast=Math.random()<.4;
+    kick(o*step,.9);if(Math.random()<.35)kick((o+8)*step,.7);
+    [3,6,10,11,14].forEach(s=>{if(Math.random()<.22)kick((o+s)*step,.6);});
+    snare((o+4)*step,1);snare((o+12)*step,1);
+    [7,9,15].forEach(s=>{if(Math.random()<.2)snare((o+s)*step,.32);});
+    for(let s=0;s<16;s+=fast?1:2)if(Math.random()<.88)hat((o+s)*step,s%4?.26:.42,false);
+    if(Math.random()<.5)hat((o+pick([6,14]))*step,.38,true);
+  }
+  return (await oc.startRendering()).getChannelData(0);
+}
+function mix808(raw,dr){
+  if(!drumsOn)return raw;
+  const o=new Float32Array(raw.length);for(let i=0;i<o.length;i++)o[i]=raw[i]+(dr[i]||0);
+  return o;
+}
+// toggle: rebuild the 808 source with/without hat + snare (same notes), re-run the tape + chop, keep time and pause state
+function applyDrums(){
+  const r=srcs.sub;if(!r||busyL.sub)return;
+  const sc=sampleAndChop(mix808(r.raw,r.dr),1.6,{tp:r.tp,plan:r.plan});r.d=sc.d;r.plan=sc.plan;   // same tape settings + same arrangement, now with/without drums
+  play('sub',sc.res,true,r.gen);
+  if(layers.mix&&srcs.synth)makeMix(true);
+  info.textContent='808 · DRUMS '+(drumsOn?'ON':'OFF');
+}
+
+// ---- change-up: on every other pass of the loop, the last few steps are reshuffled (same process as Reshuffle, but only the tail) ----
+function makeChange(l,K){
+  const d=l.src&&l.src.d;if(!d)return null;
+  const N=d.length,S=16,Em=((rng.a+rng.n-1)%32)+1;                    // Em = last step of the pass (1..32)
+  const tail=new Set();for(let i=1;i<=K;i++)tail.add(Math.floor((((Em-i)%32+32)%32)/2));   // slices that cover the last K steps
+  const plan=Array.from({length:S},(_,s)=>({src:s,mode:0,rate:.5,div:2,ofs:0}));          // everything else stays as-is
+  plan.g=l.plan&&l.plan.g;                                                                  // same level as the loop
+  tail.forEach(s=>{let src;do{src=ri(0,S-1);}while(src===s);const m=Math.random();
+    plan[s]={src,mode:m<.5?0:m<.75?1:2,rate:pick([.5,.66,.75]),div:pick([2,2,4]),ofs:Math.random()};});   // other slice / stretched / held
+  const alt=chopF(d,plan),len=Math.round(N*K/32),st0=Math.round(N*((((Em-K)%32)+32)%32)/32),fd=new Float32Array(len);
+  for(let j=0;j<len;j++){let v=alt[(st0+j)%N];const e=Math.min(j,len-1-j,48);if(e<48)v*=e/48;fd[j]=v;}
+  return fd;
+}
+function quirkTick(){
+  if(!ctx||ctx.state!=='running'||rng.n<4)return;
+  const now=ctx.currentTime,st=60/bpm/4,K=rng.n>=8?4:2;
+  for(const k in layers){
+    const l=layers[k];if(!l||l.paused||now<l.ref||!l.src||l.long||l.tb)continue;
+    const le=(rng.a+rng.n)/32*l.dur,tWrap=now+(le-posOf(l,now))/l.rate,tf=tWrap-K*st;
+    if(tf-now<.03||tf-now>.45)continue;                                   // schedule shortly before the fill begins
+    if(l.lastWrap&&Math.abs(tWrap-l.lastWrap)<rng.n*st*.5)continue;      // this pass is already handled
+    l.lastWrap=tWrap;l.pass=(l.pass||0)+1;
+    if(l.pass%2)continue;                                                 // every other loop
+    const ck=rng.a+':'+rng.n;                                             // the change-up is made once, then reused until something changes
+    if(l.fillKey!==ck){const fd=makeChange(l,K);if(!fd)continue;const nb=ctx.createBuffer(1,fd.length,SR);nb.copyToChannel(fd,0);l.fillBuf=nb;l.fillKey=ck;}
+    const fb=l.fillBuf;
+    const g=l.sg.gain;                                                    // duck the loop for the last K steps...
+    g.setValueAtTime(1,tf-.004);g.linearRampToValueAtTime(0,tf);g.setValueAtTime(0,tWrap-.003);g.linearRampToValueAtTime(1,tWrap+.002);
+    const fs=ctx.createBufferSource(),fg=ctx.createGain();                // ...and play the reshuffled tail instead
+    fs.buffer=fb;fs.playbackRate.value=l.rate;fg.gain.value=1;fs.connect(fg);fg.connect(l.g);fs.start(tf);
+  }
+}
+setInterval(quirkTick,50);
+
+// ---- melody: a catchy half-time synth line that spans 4 bars (two passes of the 32-step loop) ----
+function newPattern(){
+  const hooks=[[0,6,8,12],[0,4,8,10],[0,8,11],[0,3,6,8],[0,6,10],[0,8,12,14],[0,4,6,8,12]];   // half-time: weight on beats 1 and 3
+  const hook=pick(hooks);let d=pick([0,2,4]);
+  const motif=hook.map((_,i)=>{if(i)d=Math.max(-2,Math.min(9,d+pick([-2,-1,-1,0,1,1,2])));return d;});
+  const bars=[motif.slice(),motif.slice(),motif.map(x=>x+pick([1,2])),motif.slice()];     // statement, question, lift, answer
+  bars[1][bars[1].length-1]+=pick([1,2,-1]);
+  const ev=[];
+  bars.forEach((notes,b)=>{
+    const ons=b===3?[...hook.filter(s=>s<8),8]:hook,degs=b===3?[...notes.slice(0,ons.length-1),0]:notes;   // bar 4 lands on the tonic
+    ons.forEach((s,i)=>{
+      const nxt=ons[i+1]!==undefined?ons[i+1]:16,last=i===ons.length-1,len=b===3&&last?8:Math.max(2,Math.min(6,nxt-s));
+      ev.push({s:b*16+s,d:degs[i],len,v:s===0||s===8?1:.8});
+    });
+  });
+  return ev;
+}
+function newPatch(){
+  return {w1:pick(['sawtooth','sawtooth','square','triangle']),w2:pick(['sawtooth','square','triangle']),det:rnd(4,20),oct2:pick([0,0,12,-12]),mix2:rnd(.3,.9),
+    cut:rnd(700,3800),res:rnd(1.5,10),env:rnd(1.5,4),fdec:rnd(.12,.55),atk:rnd(.003,.04),rel:rnd(.12,.5),
+    vib:Math.random()<.5?rnd(3.5,6.5):0,vibd:rnd(5,16),dly:rnd(.1,.4),fb:rnd(.25,.45),oct:pick([0,0,-12]),sub:Math.random()<.4?rnd(.3,.6):0};
+}
+async function renderMel(pat,p){
+  const step=60/bpm/4,N=Math.ceil(SR*step*32),oc=new OfflineAudioContext(1,N*2,SR);
+  const sc=SC[gmode].n,L=sc.length,root=60+(((gkey-60)%12)+12)%12;
+  const deg=i=>root+sc[((i%L)+L)%L]+12*Math.floor(i/L);
+  const bus=oc.createGain(),sh=oc.createWaveShaper(),cm=oc.createDynamicsCompressor(),cv=new Float32Array(1024);
+  for(let i=0;i<1024;i++)cv[i]=Math.tanh((i/512-1)*1.6);sh.curve=cv;bus.gain.value=.7;
+  bus.connect(sh);sh.connect(cm);cm.connect(oc.destination);
+  const dl=oc.createDelay(1),fb=oc.createGain(),dw=oc.createGain(),dlp=oc.createBiquadFilter();       // dotted-eighth echo
+  dl.delayTime.value=step*3;fb.gain.value=p.fb;dw.gain.value=p.dly;dlp.type='lowpass';dlp.frequency.value=2800;
+  dl.connect(dlp);dlp.connect(fb);fb.connect(dl);dlp.connect(dw);dw.connect(bus);
+  pat.forEach(e=>{
+    const t=e.s*step,f=mtof(deg(e.d)+p.oct),dur=Math.max(.06,e.len*step*.92),end=t+dur,stop=end+p.rel+.05;
+    const fl=oc.createBiquadFilter(),amp=oc.createGain();fl.type='lowpass';fl.Q.value=p.res;
+    fl.frequency.setValueAtTime(Math.min(9000,p.cut*p.env),t);fl.frequency.exponentialRampToValueAtTime(Math.max(200,p.cut),t+p.fdec);
+    amp.gain.setValueAtTime(0,t);amp.gain.linearRampToValueAtTime(e.v,t+p.atk);amp.gain.setValueAtTime(e.v,end);amp.gain.linearRampToValueAtTime(0,end+p.rel);
+    fl.connect(amp);amp.connect(bus);amp.connect(dl);
+    const oscs=[{w:p.w1,det:-p.det/2,o:0,g:1},{w:p.w2,det:p.det/2,o:p.oct2,g:p.mix2}];
+    if(p.sub)oscs.push({w:'sine',det:0,o:-12,g:p.sub});
+    oscs.forEach(c=>{
+      const o=oc.createOscillator(),og=oc.createGain();o.type=c.w;o.frequency.value=f*2**(c.o/12);o.detune.value=c.det;og.gain.value=c.g;
+      if(p.vib){const lf=oc.createOscillator(),lg=oc.createGain();lf.frequency.value=p.vib;lg.gain.value=p.vibd;lf.connect(lg);lg.connect(o.detune);lf.start(t);lf.stop(stop);}
+      o.connect(og);og.connect(fl);o.start(t);o.stop(stop);
+    });
+  });
+  const out=(await oc.startRendering()).getChannelData(0);
+  let pk=0;for(let i=0;i<out.length;i++)pk=Math.max(pk,Math.abs(out[i]));
+  const g=.85/(pk||1);for(let i=0;i<out.length;i++)out[i]*=g;
+  out.notes=pat.map(e=>deg(e.d)+p.oct);out.g=g;     // pitches + level scale, so held notes can be matched later
+  out.long=true;                                  // [bars 1-2][bars 3-4] — played through as one 64-step phrase
+  return out;
+}
+
+// ---- melody pause: a longer "held" version of each note, prepared in the background, so the paused note can sustain and decay ----
+async function renderHold(p,midi,v,gen,gnorm){
+  const step=60/gen/4,D=4.8,N=Math.ceil(SR*D),oc=new OfflineAudioContext(1,N,SR),f=mtof(midi);
+  const bus=oc.createGain(),sh=oc.createWaveShaper(),cm=oc.createDynamicsCompressor(),cv=new Float32Array(1024);
+  for(let i=0;i<1024;i++)cv[i]=Math.tanh((i/512-1)*1.6);sh.curve=cv;bus.gain.value=.7;
+  bus.connect(sh);sh.connect(cm);cm.connect(oc.destination);
+  const dl=oc.createDelay(1),fb=oc.createGain(),dw=oc.createGain(),dlp=oc.createBiquadFilter();
+  dl.delayTime.value=step*3;fb.gain.value=p.fb;dw.gain.value=p.dly;dlp.type='lowpass';dlp.frequency.value=2800;
+  dl.connect(dlp);dlp.connect(fb);fb.connect(dl);dlp.connect(dw);dw.connect(bus);
+  const fl=oc.createBiquadFilter(),amp=oc.createGain();fl.type='lowpass';fl.Q.value=p.res;
+  fl.frequency.setValueAtTime(p.cut,0);fl.frequency.exponentialRampToValueAtTime(Math.max(200,p.cut*.45),3.6);   // slowly darkens as it dies
+  amp.gain.setValueAtTime(0,0);amp.gain.linearRampToValueAtTime(v,.04);amp.gain.setTargetAtTime(0,.4,.9);        // sustain, then a long decay
+  fl.connect(amp);amp.connect(bus);amp.connect(dl);
+  const oscs=[{w:p.w1,det:-p.det/2,o:0,g:1},{w:p.w2,det:p.det/2,o:p.oct2,g:p.mix2}];
+  if(p.sub)oscs.push({w:'sine',det:0,o:-12,g:p.sub});
+  oscs.forEach(c=>{
+    const o=oc.createOscillator(),og=oc.createGain();o.type=c.w;o.frequency.value=f*2**(c.o/12);o.detune.value=c.det;og.gain.value=c.g;
+    if(p.vib){const lf=oc.createOscillator(),lg=oc.createGain();lf.frequency.value=p.vib;lg.gain.value=p.vibd;lf.connect(lg);lg.connect(o.detune);lf.start(0);lf.stop(D);}
+    o.connect(og);og.connect(fl);o.start(0);o.stop(D);
+  });
+  const out=(await oc.startRendering()).getChannelData(0);
+  for(let i=0;i<out.length;i++)out[i]*=gnorm;                 // same level scaling as the loop
+  return out;
+}
+async function prepHolds(l){
+  const src=l.src;if(!src||!src.pat||!src.notes)return;
+  const holds=new Map(),cache=new Map();l.holds=holds;
+  for(let i=0;i<src.pat.length;i++){
+    if(layers.mel!==l)return;                                  // replaced meanwhile
+    const e=src.pat[i],m=src.notes[i],ck=m+'|'+e.v;let b=cache.get(ck);
+    if(!b){const fd=await renderHold(src.patch,m,e.v,l.gen,src.g);b=ctx.createBuffer(1,fd.length,SR);b.copyToChannel(fd,0);cache.set(ck,b);}
+    holds.set(i,b);
+    await new Promise(r=>setTimeout(r,0));
+  }
+}
+function stopHold(l){
+  const h=l.hold;if(!h)return;l.hold=null;
+  const t=ctx.currentTime;h.g.gain.cancelScheduledValues(t);h.g.gain.setValueAtTime(h.g.gain.value,t);h.g.gain.linearRampToValueAtTime(0,t+.08);
+  try{h.s.stop(t+.1);}catch(e){}
+}
+
+const BARS={synth:2,sub:2,mix:2,mel:2},EXCL=['synth','sub','mix'],LVL={sub:.8,mel:.3};
+
+// ---- playback: both loops share the global tempo and stay phase-locked ----
+// next 16th-note boundary of the shared grid (all loops are phase-locked, so any one can be the reference)
+function qTime(now){
+  const ref=Object.values(layers).find(l=>l&&l.ref<=now);
+  if(!ref)return now;
+  const st=60/bpm/4,r=(phaseOf(ref,now)*ref.dur/ref.rate)%st;
+  return r<.002||st-r<.002?now:now+(st-r);
+}
+
+// ---- history: every loop created in a section is kept, so the ‹ › arrows can step back and forth through them ----
+const hist={synth:{l:[],i:-1},sub:{l:[],i:-1},mix:{l:[],i:-1},mel:{l:[],i:-1}},HMAX=16,HN={synth:1,sub:2,mix:3,mel:4},HLABEL={synth:'SYNTH',sub:'808',mix:'BLEND',mel:'MELODY'};
+const toI16=f=>{const o=new Int16Array(f.length);for(let i=0;i<f.length;i++)o[i]=Math.max(-32768,Math.min(32767,f[i]*32767));return o;};
+const fromI16=a=>{const o=new Float32Array(a.length);for(let i=0;i<a.length;i++)o[i]=a[i]/32767;return o;};
+function navUI(){
+  for(const k in hist){const h=hist[k];$('hb'+HN[k]).disabled=h.i<=0;$('hf'+HN[k]).disabled=h.i<0||h.i>=h.l.length-1;}
+}
+function pushHist(key,res,src,gen){
+  const h=hist[key];h.l.push({res:toI16(res),src,gen,plan:res.plan,long:res.long});
+  if(h.l.length>HMAX)h.l.shift();
+  h.i=h.l.length-1;navUI();
+}
+function nav(key,d){
+  const h=hist[key],j=h.i+d;
+  if(j<0||j>=h.l.length||busyL[key])return;
+  h.i=j;const e=h.l[j];
+  if(e.src){srcs[key]=e.src;if(e.plan)e.src.plan=e.plan;}if(key==='mix')mixState='reshuffle';           // reshuffle etc. now work on this loop's source
+  const r=fromI16(e.res);r.plan=e.plan;r.long=e.long;play(key,r,true,e.gen,true);         // keeps pause state, lands on the next 16th, no new history entry
+  navUI();info.textContent=`${HLABEL[key]} · LOOP ${j+1} OF ${h.l.length}`;
+}
+
+// ---- global loop length: 8 buttons (1,4,5,6,7,8,16,32 steps). A press loops that many steps, starting from where the playhead is.
+// Buffers are stored twice back-to-back, so a range can run past the end of the 32-step loop and wrap seamlessly. ----
+const rng={a:0,n:32};
+const regOf=l=>l.trunc?[0,4*l.trunc]:(l.long&&rng.n>=32?[0,64]:[rng.a,rng.a+rng.n]);   // the melody plays its full 4-bar phrase when the loop is 32 steps
+function posOf(l,t){                                   // playhead (buffer seconds) inside the current loop range
+  const R=regOf(l),ls=R[0]/32*l.dur,le=R[1]/32*l.dur;let p=l.pos0+(t-l.ref)*l.rate;
+  if(p>=le)p=ls+((p-ls)%(le-ls));
+  return p;
+}
+const phaseOf=(l,t)=>posOf(l,t)/l.dur;
+function respawn(l,pos,t,buf){                             // restart a source inside the range; identical audio, so the 10 ms crossfade is seamless
+  const s=ctx.createBufferSource(),sg=ctx.createGain();
+  s.buffer=buf||l.s.buffer;s.loop=true;const R=regOf(l);s.loopStart=R[0]/32*l.dur;s.loopEnd=l.trunc?s.buffer.duration:R[1]/32*l.dur;s.playbackRate.value=l.rate;
+  sg.gain.setValueAtTime(0,t);sg.gain.linearRampToValueAtTime(1,t+.01);
+  s.connect(sg);sg.connect(l.g);s.start(t,pos);
+  l.sg.gain.cancelScheduledValues(t);l.sg.gain.setValueAtTime(1,t);l.sg.gain.linearRampToValueAtTime(0,t+.01);
+  try{l.s.stop(t+.02);}catch(e){}
+  l.s=s;l.sg=sg;l.pos0=pos;l.ref=t;
+}
+// melody: with a loop shorter than 32 steps, keep only the first n steps of each of its four 16-step bars and play them back to back,
+// so the phrase still moves through all 4 bars (one per pass of the shortened loop) instead of looping a single fragment
+function truncMel(full,n){
+  const N=full.length/2,L=Math.round(n*N/32),out=new Float32Array(4*L),fd=Math.min(240,L>>1);
+  for(let k=0;k<4;k++){const src=Math.round(16*k*N/32);
+    for(let i=0;i<L;i++){let v=full[src+i];if(i>L-fd)v*=(L-i)/fd;out[k*L+i]=v;}}   // short fade where a bar is cut
+  out.long=true;return out;
+}
+function melSection(l,t){const x=posOf(l,t)/l.dur*32;return l.trunc?Math.floor(x/l.trunc)%4:Math.floor((x%64)/16)%4;}   // which of the 4 bars the melody is in
+function gridStep(l,t){const x=posOf(l,t)/l.dur*32;return l.trunc?(rng.a+(x%l.trunc))%32:x%32;}                          // position on the shared 32-step grid
+function rebuildLayer(l,k,n,A,sNow,t){                 // swap a layer between its full and truncated-bar versions, keeping its place
+  const nb=layerBuf(l.base,l.key,l.long);
+  l.trunc=nb.trunc;l.tb=nb.tb;
+  const steps=nb.trunc?k*nb.trunc+Math.max(0,Math.min(nb.trunc-.001,sNow-A)):(sNow%32)+(l.long&&k>=2?32:0);
+  respawn(l,steps/32*l.dur,t,nb.buf);
+}
+function setLen(n){
+  const t=ctx?ctx.currentTime:0;let A=0,sNow=0;const secs={};
+  if(ctx){
+    const act=Object.values(layers).filter(l=>l&&t>=l.ref),ref=act.find(l=>!l.paused&&!l.long&&!l.tb)||act.find(l=>!l.long&&!l.tb)||act.find(l=>!l.paused)||act[0];
+    if(ref){sNow=gridStep(ref,t);if(n<32)A=Math.floor(sNow);}                      // the step the playhead is on right now
+    for(const k in layers){const l=layers[k];if(!l)continue;const tt=Math.max(t,l.ref);if(l.trunc||l.long)secs[k]=melSection(l,tt);l.pos0=posOf(l,tt);l.ref=tt;}  // freeze positions under the old range
+  }
+  rng.a=A;rng.n=n;
+  if(ctx)for(const k in layers){
+    const l=layers[k];if(!l)continue;
+    const need=l.long||l.tb||(melMix&&melChops.length===4&&EXCL.includes(l.key)&&n<32);   // layers whose audio changes with the loop length
+    if(need){if(l.ref<=t)rebuildLayer(l,secs[k]||0,n,A,sNow,t);continue;}
+    const R=regOf(l);l.s.loopStart=R[0]/32*l.dur;l.s.loopEnd=R[1]/32*l.dur;
+    if(l.ref>t)continue;                                              // still waiting to start
+    const st=(((l.pos0/l.dur*32)%32)+32)%32;                          // where this loop is, in steps
+    respawn(l,(A+((st-A+32)%32))/32*l.dur,t);                         // same musical spot, now inside the new range
+  }
+  document.querySelectorAll('.stp').forEach(b=>b.classList.toggle('on',+b.dataset.n===n));
+}
+
+document.querySelectorAll('.stp').forEach(b=>b.addEventListener('click',()=>setLen(+b.dataset.n)));
+
+// stereo widener for the melody: mono in -> wide stereo out. The left gets the signal plus a short delayed copy, the right gets it minus that copy
+// (complementary comb, so it still sums cleanly to mono), and the delay drifts slowly for a chorus-like shimmer
+let melIn=null;
+function melBus(){
+  if(melIn)return melIn;
+  const inn=ctx.createGain(),mg=ctx.createChannelMerger(2),dly=ctx.createDelay(.05),pL=ctx.createGain(),pR=ctx.createGain(),lfo=ctx.createOscillator(),ld=ctx.createGain();
+  inn.gain.value=.8;dly.delayTime.value=.017;pL.gain.value=.7;pR.gain.value=-.7;lfo.frequency.value=.35;ld.gain.value=.003;
+  lfo.connect(ld);ld.connect(dly.delayTime);lfo.start();
+  inn.connect(mg,0,0);inn.connect(mg,0,1);inn.connect(dly);dly.connect(pL);dly.connect(pR);pL.connect(mg,0,0);pR.connect(mg,0,1);
+  mg.connect(master);melIn=inn;return inn;
+}
+
+// builds the audio buffer for a layer under the current loop length. Plain beats are stored twice (so a range can wrap);
+// the melody is [bars 1-2][bars 3-4]; with a loop shorter than 32 steps the melody -- and, with Mix in on, the beats too --
+// become four truncated "bars" played back to back, so the melody keeps moving through its 4 bars
+function layerBuf(base,key,long){
+  let res=base;
+  if(!long&&melMix&&melChop&&EXCL.includes(key))res=(rng.n<32&&melChops.length===4)?truncBeat(base,key):addMel(base,key);
+  const tb=!!res.tb,trunc=(long||tb)&&rng.n<32?Math.min(rng.n,16):0;
+  if(long&&trunc)res=truncMel(base,trunc);
+  const one=long||tb,n1=one?res.length/2:res.length;
+  const buf=ctx.createBuffer(1,one?res.length:n1*2,SR);buf.copyToChannel(res,0);if(!one)buf.copyToChannel(res,0,n1);
+  return {buf,trunc,tb,res};
+}
+function play(key,res,keep,gen=bpm,nohist,quiet){
+  if(!master){master=ctx.createGain();master.gain.value=.7;const c=ctx.createDynamicsCompressor();master.connect(c);c.connect(ctx.destination);}
+  const base=res,long=!!res.long,lb=layerBuf(base,key,long),buf=lb.buf,trunc=lb.trunc,tb=lb.tb;res=lb.res;
+  const d1=(long?base.length/2:base.length)/SR,now=ctx.currentTime,beat=EXCL.filter(k=>k!==key).map(k=>layers[k]).find(Boolean),other=beat||(key==='mel'?null:layers.mel),old=layers[key],lvl=LVL[key]||1,pz=!!(quiet||(keep&&old&&old.paused));
+  const R=trunc?[0,4*trunc]:(long&&rng.n>=32?[0,64]:[rng.a,rng.a+rng.n]);
+  let when=qTime(now),off=0;   // every transition lands on the next 16th note
+  if(other&&other.ref>now)when=other.ref;
+  const ready=other&&!(other.ref>now);
+  if(trunc){                                             // truncated bars: line up with the loop start, continuing from the same bar if there is one
+    const sb=ready?gridStep(other,when):null,hold=keep&&old&&old.ref<=now&&old.trunc?old:null,k=hold?melSection(hold,when):0;
+    const w=sb!==null?(((sb-rng.a)%trunc)+trunc)%trunc:hold?(posOf(hold,when)/hold.dur*32)%trunc:0;off=(k*trunc+w)/32*d1;
+  }else if(long){                                        // full melody
+    const sb=ready&&beat?gridStep(beat,when):null,hold=keep&&old&&old.ref<=now?old:null;
+    off=hold&&!hold.trunc?posOf(hold,when)/hold.dur*d1:((sb!==null?sb:0)/32)*d1;
+  }else{
+    if(ready&&other.trunc)off=(rng.a+((posOf(other,when)/other.dur*32)%other.trunc))/32*d1;   // join a beat in step with the truncated melody
+    else if(ready)off=phaseOf(other,when)*d1;                                                   // same-length loops: join in phase
+    else if(keep&&old&&old.ref<=now)off=phaseOf(old,when)*d1;                                   // rearrange: carry on from the same spot
+    else off=R[0]/32*d1;
+    if(rng.n>=32)off%=d1;                                // full-loop beats never start in the melody's second half
+  }
+  const s=ctx.createBufferSource(),g=ctx.createGain();
+  s.buffer=buf;s.loop=true;s.loopStart=R[0]/32*d1;s.loopEnd=trunc?buf.duration:R[1]/32*d1;s.playbackRate.value=bpm/gen;
+  g.gain.setValueAtTime(0,now);g.gain.setValueAtTime(0,when);g.gain.linearRampToValueAtTime(pz?0:lvl,when+.03);
+  const sg=ctx.createGain();s.connect(sg);sg.connect(g);g.connect(key==='mel'?melBus():master);s.start(when,off);
+  if(old){try{const t=Math.max(now,when);old.g.gain.cancelScheduledValues(now);old.g.gain.setValueAtTime(old.paused?0:old.lvl,t);old.g.gain.linearRampToValueAtTime(0,t+.05);old.s.stop(t+.06);}catch(e){}}
+  layers[key]={s,sg,g,key,long,trunc,tb,full:long?base:null,src:srcs[key],plan:res.plan,base,bars:BARS[key],lvl,dur:d1,gen,rate:bpm/gen,pos0:off,ref:when,paused:pz};
+  pp[key].disabled=false;refreshUI();
+  if(old&&old.hold)stopHold(old);if(key==='mel')prepHolds(layers[key]);
+  if(!keep&&!quiet&&EXCL.includes(key))EXCL.forEach(k=>{if(k!==key)mute(k,when);});   // one beat source at a time (the melody plays on top)
+  if(!nohist)pushHist(key,base,srcs[key],gen);
+  return when-now;
+}
+
+// ---- intermingle: build a loop from slices of BOTH sources, then chop/stretch/hold it ----
+const mixb=document.getElementById('mixb');
+function toLen(d,n){
+  if(d.length===n)return d;
+  const o=new Float32Array(n);
+  for(let i=0;i<n;i++){const p=i*d.length/n,i0=p|0,f=p-i0;o[i]=d[i0]*(1-f)+d[Math.min(d.length-1,i0+1)]*f;}
+  return o;
+}
+function makeMix(keep){
+  if(!srcs.synth||!srcs.sub)return;
+  const N=Math.ceil(SR*60/bpm/4*32),S=16,a=toLen(srcs.synth.d,N),b=toLen(srcs.sub.d,N),m=new Float32Array(N);
+  const pickA=Array.from({length:S},()=>Math.random()<.5);
+  if(pickA.every(Boolean))pickA[ri(1,S-1)]=false;else if(!pickA.some(Boolean))pickA[ri(1,S-1)]=true;
+  for(let s=0;s<S;s++){const from=pickA[s]?a:b,lo=Math.round(s*N/S),hi=Math.round((s+1)*N/S);for(let i=lo;i<hi;i++)m[i]=from[i];}
+  srcs.mix={d:m,gen:bpm};mixState='reshuffle';
+  play('mix',chopF(m),keep&&!!layers.mix,bpm);
+  info.textContent='MIX · SYNTH + 808 SLICES';
+}
+
+// ---- melody "mix in": chop the current melody up and intermingle its slices with the playing beat loops (like Blend) ----
+function buildMelChop(){
+  const m=srcs.mel;if(!m||!m.res){melChop=null;melChops=[];return;}
+  const N=m.res.length/2,x=new Float32Array(N),S=16,pickA=Array.from({length:S},()=>Math.random()<.5);   // each slice from bars 1-2 or bars 3-4
+  for(let s=0;s<S;s++){const from=pickA[s]?0:N,lo=Math.round(s*N/S),hi=Math.round((s+1)*N/S);for(let i=lo;i<hi;i++)x[i]=m.res[from+i];}
+  melChop=chopF(x);
+  const Bn=N>>1;                                        // one chopped version of each of the melody's 4 bars (used by shortened loops)
+  melChops=[0,1,2,3].map(k=>{const y=new Float32Array(N);for(let i=0;i<N;i++)y[i]=m.res[k*Bn+(i%Bn)];return chopF(y);});
+  melPick=Array.from({length:S},(_,s)=>s>0&&Math.random()<.4);if(!melPick.some(Boolean))melPick[ri(1,S-1)]=true;   // which slice slots the melody takes over
+}
+function truncBeat(base,key){                           // shortened loop + Mix in: pass k of 4 takes its melody slices from bar k, like the plain melody does
+  const N=base.length,n=Math.min(rng.n,16),L=Math.round(n*N/32),ws=Math.round(rng.a*N/32),out=new Float32Array(4*L),sw=N/16,fd=Math.min(64,L>>1);
+  const gm=.85*LVL.mel/(.9*(LVL[key]||1));
+  for(let k=0;k<4;k++){
+    const c=toLen(melChops[k],N);
+    for(let i=0;i<L;i++){
+      const slot=Math.floor(i/sw),useMel=slot>0&&melPick[slot%16];
+      out[k*L+i]=useMel?c[i]*gm*(i>L-fd?(L-i)/fd:1):base[(ws+i)%N];
+    }
+  }
+  out.tb=true;out.plan=base.plan;return out;
+}
+function addMel(res,key){                                   // same idea as Blend: random slice slots come from the melody instead of the loop
+  const N=res.length,S=16,c=toLen(melChop,N),out=new Float32Array(N),gm=.85*LVL.mel/(.9*(LVL[key]||1));   // melody slices sit at the same level as the standalone melody
+  for(let k=0;k<S;k++){const lo=Math.round(k*N/S),hi=Math.round((k+1)*N/S),useMel=melPick[k]&&k>0;   // slice 1 (the downbeat) always stays
+    for(let i=lo;i<hi;i++)out[i]=useMel?c[i]*gm:res[i];}
+  out.plan=res.plan;return out;
+}
+function applyMelMix(){EXCL.forEach(k=>{const l=layers[k];if(l&&l.base)play(k,l.base,true,l.gen,true);});}   // re-play each beat with/without the melody, in time
+// the melody and "Mix in" take turns: mixing it into the beats stops the melody, switching Mix in off brings it back
+let melWas=false;
+function stopMel(){const l=layers.mel;if(!l||l.paused)return;mute('mel',qTime(ctx.currentTime),true);}
+async function setMelMix(on,fromMelody){
+  melMix=on;$('mm').classList.toggle('on',on);$('mm').setAttribute('aria-pressed',on);
+  if(on){
+    const l=layers.mel;melWas=!!l&&!l.paused;if(melWas)stopMel();            // the melody steps aside while it is mixed into the beats
+    if(!srcs.mel){await generate('mel',false,true);return;}                  // no melody yet: make one (paused); generate() builds and applies the chopped version
+    buildMelChop();
+  }
+  applyMelMix();
+  if(!on&&melWas&&!fromMelody)togglePause('mel');                           // ...and it comes back when Mix in is switched off
+  if(!on)melWas=false;
+}
+const toggleMelMix=()=>setMelMix(!melMix);
+
+// ---- Auto: every 2 bars (32 steps) one random thing changes -- never the step count, BPM, key or scale ----
+let autoOn=false,autoT=0,autoLast='',melBars=0,melLastT=0,melPat=null,melBlock=0;
+function autoStep(){
+  const melOK=!(melBlock&&ctx.currentTime<melBlock);                   // the melody may not be (re)started during its 1-bar rest
+  const beats=EXCL.filter(k=>layers[k]),active=beats.find(k=>!layers[k].paused),A=[];
+  const add=(name,w,fn)=>A.push({name,w,fn});
+  add('new-synth',layers.synth?2:4,()=>generate('synth'));                                   // fresh loops (missing sources are favoured, so it builds up)
+  add('new-808',layers.sub?2:4,()=>generate('sub'));
+  beats.forEach(k=>add('shuffle-'+k,k===active?3:1.5,()=>rearrange(k)));                     // re-chop a loop
+  beats.forEach(k=>{if(k!==active)add('switch-'+k,2,()=>togglePause(k));});                  // swap which beat is playing
+  if(srcs.sub)add('drums',2,()=>$('dr').click());                                            // drums on/off for the 808
+  if(srcs.synth&&srcs.sub)add('blend',1.5,()=>$('mixb').click());                            // blend / reshuffle the blend
+  if(layers.mel||melOK)add('new-mel',layers.mel?1:3,()=>generate('mel',!!layers.mel));                            // melody: new notes + sound
+  if(layers.mel){add('mel-shuffle',2,()=>rearrange('mel'));if(melOK||!layers.mel.paused)add('mel-toggle',2,()=>togglePause('mel'));if(melOK||melMix)add('mixin',2,()=>$('mm').click());}
+  for(const k in hist){const h=hist[k];if(h.l.length>1)add('hist-'+k,1,()=>nav(k,h.i<=0?1:h.i>=h.l.length-1?-1:Math.random()<.5?-1:1));}   // step through history
+  const pool=A.filter(a=>a.name!==autoLast),use=pool.length?pool:A,tot=use.reduce((s,a)=>s+a.w,0);
+  let r=Math.random()*tot,chosen=use[0];for(const a of use){r-=a.w;if(r<=0){chosen=a;break;}}
+  autoLast=chosen.name;chosen.fn();
+}
+function autoSchedule(){
+  if(!autoOn)return;
+  const st=60/bpm/4,now=ctx.currentTime;
+  autoT+=32*st;if(autoT<now+.05)autoT=now+32*st;                // next 2-bar mark (re-syncs if the tab was in the background)
+  setTimeout(()=>{if(!autoOn)return;autoStep();autoSchedule();},Math.max(0,(autoT-ctx.currentTime-.12)*1000));
+}
+function setAuto(on){
+  autoOn=on;$('auto').classList.toggle('on',on);$('auto').setAttribute('aria-pressed',on);
+  if(!on||!ctx)return;
+  autoLast='';melBars=0;melBlock=0;melLastT=ctx.currentTime;const now=ctx.currentTime,st=60/bpm/4,ref=Object.values(layers).find(l=>l&&!l.paused&&now>=l.ref);
+  if(!ref){autoStep();autoT=now;autoSchedule();return;}          // nothing playing yet: start something right away
+  autoT=now+((32-gridStep(ref,now))%32)*st-32*st;autoSchedule(); // otherwise the first change lands on the loop's next 2-bar mark
+}
+
+// Auto: the same melody may sound for 8 bars at most (standalone or mixed in), then it is switched off for at least 1 bar
+function melOff(){
+  if(melMix)setMelMix(false,true);                                          // switch Mix in off without bringing the standalone melody back
+  else if(layers.mel&&!layers.mel.paused)togglePause('mel');                // the paused note still rings out and decays
+  melBlock=ctx.currentTime+16*60/bpm/4;melBars=0;                           // keep it off for one bar
+}
+setInterval(()=>{
+  if(!autoOn||!ctx||ctx.state!=='running'){melLastT=ctx?ctx.currentTime:0;return;}
+  const now=ctx.currentTime,dt=now-melLastT,pat=srcs.mel&&srcs.mel.pat;melLastT=now;
+  const sounding=!!(layers.mel&&!layers.mel.paused&&now>=layers.mel.ref)||melMix;
+  if(!sounding||pat!==melPat){melBars=0;melPat=pat;}                        // silence, or a new melody, restarts the count
+  if(sounding){melBars+=dt/(16*60/bpm/4);if(melBars>=8)melOff();}
+},100);
+
+// Blend: if a source is missing, quietly make it first (paused, so nothing plays until the blend does)
+let busyMix=false;
+async function blend(){
+  if(mixState==='reshuffle'){rearrange('mix');return;}
+  if(busyMix)return;busyMix=true;mixb.disabled=true;mixb.classList.add('busy');
+  try{for(const k of ['synth','sub'])if(!srcs[k])await generate(k,false,true);makeMix(false);}catch(e){}
+  mixb.classList.remove('busy');mixb.disabled=false;busyMix=false;
+}
+
+function rearrange(k){
+  if(!srcs[k]||busyL[k])return;
+  if(k==='mel'){generate('mel',true,false,'pattern');return;}   // melody: new notes, same sound
+  const l=layers[k],takeOver=!!l&&l.paused&&EXCL.some(x=>x!==k&&layers[x]&&!layers[x].paused);  // a different loop is playing: take over
+  const res=chopF(srcs[k].d);srcs[k].plan=res.plan;play(k,res,!takeOver,srcs[k].gen);
+  info.textContent=HLABEL[k]+' · SLICES REARRANGED';
+}
+
+function mute(k,at,hard){
+  const l=layers[k];if(!l||l.paused)return at;
+  const now=ctx.currentTime;at=Math.max(now,at||now);l.paused=true;refreshUI();
+  const g=l.g.gain,v=g.value;g.cancelScheduledValues(now);g.setValueAtTime(v,now);g.setValueAtTime(v,at);
+  if(k==='mel'&&!hard)return muteMel(l,at);
+  g.linearRampToValueAtTime(0,at+.03);return at+.05;
+}
+// Melody pause: the note it is paused on is sustained into a long decay; the notes after it never play.
+function muteMel(l,at){
+  const g=l.g.gain,st=60/bpm/4,src=l.src,pat=src&&src.pat;
+  if(!pat){g.setTargetAtTime(0,at,.3);return at+2;}
+  const R=regOf(l),tr=l.trunc,step=posOf(l,at)/l.dur*32;                   // where the playhead is, in steps, when the pause lands
+  const evs=[];pat.forEach((e,i)=>{                                        // the notes as they are playing now (truncated bars keep only their first steps)
+    if(tr){const k=Math.floor(e.s/16),w=e.s%16;if(w<tr)evs.push({i,s:k*tr+w,len:Math.min(e.len,tr-w)});}
+    else evs.push({i,s:e.s,len:e.len});
+  });
+  let hit=evs.find(e=>e.s<=step&&step<e.s+e.len*.92);                      // the note sounding right now
+  if(!hit){let best=null;evs.forEach(e=>{if(e.s<=step&&(!best||e.s>best.s))best=e;});
+    if(best&&(step-(best.s+best.len*.92))*st<.6)hit=best;}                  // or one that just ended (its tail is still ringing)
+  const hb=hit&&l.holds&&l.holds.get(hit.i);
+  if(hb){                                                                  // crossfade into the long held version of that note
+    g.linearRampToValueAtTime(0,at+.06);
+    const hs=ctx.createBufferSource(),hg=ctx.createGain();hs.buffer=hb;hs.playbackRate.value=l.rate;
+    hg.gain.setValueAtTime(0,at);hg.gain.linearRampToValueAtTime(l.lvl,at+.06);hs.connect(hg);hg.connect(melBus());hs.start(at);
+    l.hold={s:hs,g:hg};return at+hb.duration/l.rate+.1;
+  }
+  const starts=evs.map(e=>e.s).filter(s=>s>=R[0]&&s<R[1]).sort((a,b)=>a-b);   // fallback: let the baked note ring out, cut before the next one
+  const nx=starts.find(s=>s>step+.01);
+  const gap=(nx!==undefined?nx-step:starts.length?(R[1]-step)+(starts[0]-R[0]):8)*st;
+  const tCut=at+gap-.01;
+  const tFade=Math.min(at+(hit&&step<hit.s+hit.len*.92?Math.max(0,hit.s+hit.len*.92-step)*st:0),tCut-.05);
+  g.setTargetAtTime(0,tFade,Math.max(.03,Math.min(.6,(tCut-tFade)/4.6)));
+  g.setValueAtTime(0,tCut);
+  return tCut;
+}
+
+// only one source plays at a time, and every switch lands on the next 16th note of the shared grid
+// (muted loops keep running silently, so everything stays in phase)
+function togglePause(key){
+  const l=layers[key];if(!l)return;
+  if(!l.paused){
+    const now=ctx.currentTime,q=qTime(now);
+    const end=mute(key,q);
+    setTimeout(()=>{if(Object.values(layers).every(x=>!x||x.paused))ctx.suspend();},(end-now+.15)*1000);
+  }else{
+    if(key==='mel'&&melMix)setMelMix(false,true);   // starting the melody on its own switches Mix in off
+    ctx.resume().then(()=>{
+      const now=ctx.currentTime,q=qTime(now);
+      if(l.hold)stopHold(l);
+      if(EXCL.includes(key))EXCL.forEach(k=>{if(k!==key)mute(k,q);});
+      l.paused=false;refreshUI();
+      const g=l.g.gain,v0=g.value;g.cancelScheduledValues(now);g.setValueAtTime(v0,now);g.setValueAtTime(v0,q);g.linearRampToValueAtTime(l.lvl,q+.03);
+    });
+  }
+}
+
+function setTempo(v){
+  bpm=v;bv.textContent=v;if(!ctx)return;const now=ctx.currentTime;
+  for(const k in layers){const l=layers[k];if(!l)continue;
+    const t=Math.max(now,l.ref);l.pos0=posOf(l,t);l.ref=t;l.rate=bpm/l.gen;l.s.playbackRate.value=l.rate;}
+}
+
+async function generate(key,keepState,quiet,how){
+  if(key==='mel'&&melMix)quiet=true;                    // while Mix in is on, a new melody feeds the mix and stays silent on its own
+  if(busyL[key])return;busyL[key]=true;const b=pads[key];b.disabled=true;b.classList.add('busy');b.querySelector('.t').textContent='Making…';
+  try{
+    if(ctx.state!=='running')await ctx.resume();
+    await new Promise(r=>setTimeout(r,40));
+    let res,txt;const gb=bpm;
+    if(key==='synth'){const o=await render(),sc=sampleAndChop(o.out,1.3);res=sc.res;srcs[key]={d:sc.d,gen:gb};txt=`SYNTH · ${NOTES[o.root%12]} · TAPE`;}
+    else if(key==='mel'){const cur=srcs.mel,pat=(how&&how!=='pattern'&&cur)?cur.pat:newPattern(),patch=((how==='re'||how==='pattern')&&cur)?cur.patch:newPatch();res=await renderMel(pat,patch);srcs[key]={pat,patch,gen:gb,notes:res.notes,g:res.g,res};txt=`MELODY · ${NOTES[gkey]} · ${how==='pattern'?'RESHUFFLED':how==='re'?'NEW KEY':'NEW MELODY'}`;}
+    else{const raw=await render808(),dr=await renderDrums(),sc=sampleAndChop(mix808(raw,dr));res=sc.res;srcs[key]={d:sc.d,gen:gb,raw,dr,tp:sc.tp,plan:sc.plan};txt=`808 · ${NOTES[gkey]} · FOLDED`;}
+    if(key!=='mel')mixState='blend';const w=play(key,res,!!keepState&&!!layers[key],gb,false,quiet);if(key==='mel'&&melMix){buildMelChop();applyMelMix();}rr[key].disabled=false;info.textContent=txt+(w>.3?' · ENTERS ON THE ONE':'');
+  }catch(e){info.textContent='Error: '+e.message;}
+  b.classList.remove('busy');b.querySelector('.t').textContent='New loop';b.disabled=false;busyL[key]=false;
+}
+
+(function pulse(){
+  if(ctx){const now=ctx.currentTime;for(const k in layers){const l=layers[k];if(!l)continue;
+    badge[k].style.transform=l.paused||now<l.ref?'':`scale(${1+.05*Math.pow(1-(phaseOf(l,now)*l.bars*4)%1,3)})`;}}
+  requestAnimationFrame(pulse);
+})();
+
+document.getElementById('start').addEventListener('click',()=>{
+  unlockAudio();document.getElementById('init').classList.add('hide');generate('synth');
+});
+pads.synth.addEventListener('click',()=>generate('synth'));
+pads.sub.addEventListener('click',()=>generate('sub'));
+rr.synth.addEventListener('click',()=>rearrange('synth'));
+rr.sub.addEventListener('click',()=>rearrange('sub'));
+mixb.addEventListener('click',blend);
+for(const k in HN){$('hb'+HN[k]).addEventListener('click',()=>nav(k,-1));$('hf'+HN[k]).addEventListener('click',()=>nav(k,1));}
+$('dr').addEventListener('click',()=>{drumsOn=!drumsOn;$('dr').classList.toggle('on',drumsOn);$('dr').setAttribute('aria-pressed',drumsOn);applyDrums();});
+pp.mix.addEventListener('click',()=>togglePause('mix'));
+pads.mel.addEventListener('click',()=>generate('mel'));
+rr.mel.addEventListener('click',()=>rearrange('mel'));
+pp.mel.addEventListener('click',()=>togglePause('mel'));
+$('mm').addEventListener('click',toggleMelMix);
+$('auto').addEventListener('click',()=>setAuto(!autoOn));
+pp.synth.addEventListener('click',()=>togglePause('synth'));
+pp.sub.addEventListener('click',()=>togglePause('sub'));
+bpmr.addEventListener('input',()=>setTempo(+bpmr.value));
+const ksel=document.getElementById('keysel'),msel=document.getElementById('modesel');
+NOTES.forEach((n,i)=>ksel.add(new Option(n,i)));ksel.value=gkey;SCALES.forEach(([id,name])=>msel.add(new Option(name,id)));msel.value=gmode;
+const regen=async()=>{const had=!!layers.mix;if(layers.mel)generate('mel',true,false,'re');await Promise.all(['synth','sub'].filter(k=>layers[k]).map(k=>generate(k,true)));if(had)makeMix(true);};
+ksel.addEventListener('change',()=>{gkey=+ksel.value;regen();});
+msel.addEventListener('change',()=>{gmode=msel.value;regen();});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&ctx&&ctx.state!=='running'&&Object.values(layers).some(l=>l&&!l.paused))ctx.resume();});
+</script>
+</body>
+</html>
